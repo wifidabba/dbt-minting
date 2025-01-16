@@ -13,7 +13,7 @@
     "@solana/spl-token": "^0.4.9",
     "@solana/web3.js": "^1.98.0",
     "bs58": "^6.0.0",
-    "shamir": "^0.7.1"
+    "shamirs-secret-sharing": "^2.0.0"
   },
   "main": "src/{index.js,functions/*.js}"
 }

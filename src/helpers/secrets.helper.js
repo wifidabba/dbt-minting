@@ -70,23 +70,40 @@ const fetchMintAuth = async () => {
     const mintingKeyTwoVault = fetchAzureVaultClient('minting-key-two');
     const mintingKeyThreeVault = fetchAzureVaultClient('minting-key-three');
 
-    const [encryptedShardOne, encryptedShardTwo, encryptedShardThree, ivOne, ivTwo, ivThree, encryptionKeyOne, encryptionKeyTwo, encryptionKeyThree] = await Promise.all([
-        fetchSecretFromAzureVault(mintingShardOneVault, 'encrypted-shard-one'),
-        fetchSecretFromAzureVault(mintingShardTwoVault, 'encrypted-shard-two'),
-        fetchSecretFromAzureVault(mintingShardThreeVault, 'encrypted-shard-three'),
+    const [
+        encryptedShardOne, 
+        encryptedShardTwo, 
+        encryptedShardThree, 
+        ivOne, 
+        ivTwo, 
+        ivThree, 
+        encryptionKeyOne, 
+        encryptionKeyTwo, 
+        encryptionKeyThree,
+        authTagOne,
+        authTagTwo,
+        authTagThree,
+    ] = await Promise.all([
+        fetchSecretFromAzureVault(mintingShardOneVault, 'encrypted-key-shard-one'),
+        fetchSecretFromAzureVault(mintingShardTwoVault, 'encrypted-key-shard-two'),
+        fetchSecretFromAzureVault(mintingShardThreeVault, 'encrypted-key-shard-three'),
         fetchSecretFromAzureVault(mintingShardOneVault, 'iv-one'),
         fetchSecretFromAzureVault(mintingShardTwoVault, 'iv-two'),
         fetchSecretFromAzureVault(mintingShardThreeVault, 'iv-three'),
         fetchSecretFromAzureVault(mintingKeyOneVault, 'encryption-key-one'),
         fetchSecretFromAzureVault(mintingKeyTwoVault, 'encryption-key-two'),
-        fetchSecretFromAzureVault(mintingKeyThreeVault, 'encryption-key-three')
+        fetchSecretFromAzureVault(mintingKeyThreeVault, 'encryption-key-three'),
+        fetchSecretFromAzureVault(mintingKeyOneVault, 'auth-tag-one'),
+        fetchSecretFromAzureVault(mintingKeyTwoVault, 'auth-tag-two'),
+        fetchSecretFromAzureVault(mintingKeyThreeVault, 'auth-tag-three'),
     ]);
 
     const encryptionKeys = [encryptionKeyOne, encryptionKeyTwo, encryptionKeyThree];
     const ivs = [ivOne, ivTwo, ivThree];
     const encryptedShards = [encryptedShardOne, encryptedShardTwo, encryptedShardThree];
+    const authTags = [authTagOne, authTagTwo, authTagThree];
 
-    const mintAuthSk = retrieveSecretKey(encryptionKeys, ivs, encryptedShards);
+    const mintAuthSk = retrieveSecretKey(encryptionKeys, ivs, encryptedShards, authTags);
 
     return solanaWeb3.Keypair.fromSecretKey(bs58.decode(mintAuthSk));
 }

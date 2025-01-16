@@ -1,50 +1,35 @@
-const { join } = require('shamir');
+const { combine } = require('shamirs-secret-sharing');
 const { createDecipheriv } = require('crypto');
 
-const retrieveSecretKey = function(encryptionKeys, ivs, encryptedShards) {
+function retrieveSecretKey(encryptionKeys, ivs, encryptedShards, authTags) {
+    const decryptedShards = encryptedShards.map((encryptedShard, index) => {
+        const encryptionKey = Buffer.from(encryptionKeys[index], 'hex'); // 32 bytes = 256 bits
+        const iv = Buffer.from(ivs[index], 'hex'); // 16 bytes = 128 bits
+        const authTag = Buffer.from(authTags[index], 'hex');
 
-    const recoveredShards = encryptedShards.map((shard, index) => {
-        const encryptionKey = encryptionKeys[index]; // 32 bytes = 256 bits
-        const iv = ivs[index]; // 16 bytes = 128 bits
+        const decrypted = decrypt(Buffer.from(encryptedShard, 'hex'), encryptionKey, iv, authTag);
 
-        // Encrypt the shard
-        const decrypted = decryptShard(shard, Buffer.from(encryptionKey, 'hex'), Buffer.from(iv, 'hex'))
-
-        // Return encrypted shard along with its key and IV
-        return decrypted.toString('hex');
+        return decrypted;
     });
 
-    const formattedShards = formatShards(recoveredShards);
+    // Combine the decrypted shards to retrieve the secret
+    const recoveredSecretBuffer = combine(decryptedShards);
 
-    const recoveredEncryptedSecret = join(formattedShards);
-
-    const utf8Decoder = new TextDecoder();
-    return utf8Decoder.decode(recoveredEncryptedSecret);
+    return recoveredSecretBuffer.toString('utf-8');
 }
 
-const decryptShard = function (encryptedShard, encryptionKeyHex, ivHex) {
-    // Convert encryptionKey and IV from hex to buffers
-    const encryptionKey = Buffer.from(encryptionKeyHex, 'hex');
-    const iv = Buffer.from(ivHex, 'hex');
 
-    // Convert the encrypted shard from hex to buffer
-    const encryptedBuffer = Buffer.from(encryptedShard, 'hex');
+function decrypt(encryptedData, encryptionKey, iv, authTag) {
+    const decipher = createDecipheriv('aes-256-gcm', encryptionKey, iv);
 
-    // Create a decipher instance
-    const decipher = createDecipheriv('aes-256-cbc', encryptionKey, iv);
+    // Set the authentication tag for verification during decryption
+    decipher.setAuthTag(authTag);
 
-    // Decrypt the shard
-    let decrypted = decipher.update(encryptedBuffer);
+    // Decrypt the data
+    let decrypted = decipher.update(encryptedData);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
 
-    return decrypted; // Return the decrypted shard as a buffer
-}
-
-const formatShards = function (shardsArray) {
-    return shardsArray.reduce((acc, shardHex, index) => {
-        acc[index + 1] = Uint8Array.from(Buffer.from(shardHex, 'hex'));
-        return acc;
-    }, {});
+    return decrypted;
 }
 
 module.exports = {
