@@ -31,7 +31,7 @@ const mintTokens = async (connection, mintPublicKey, tokenAccountAddress, amount
     let mintAuth = await fetchMintAuth();
 
     transaction.sign([mintAuth]);
-
+    mintAuth.secretKey.fill(0); 
     mintAuth = null;
 
     const txid = await connection.sendTransaction(transaction, { maxRetries: 3 });
@@ -60,6 +60,7 @@ const setMintAuthorityToNull = async (connection, mintPublicKey, mintAuthPk) => 
             [mintAuth]
     );
 
+    mintAuth.secretKey.fill(0); 
     mintAuth = null;
 
     console.log(`Txn : ${signature}`);
